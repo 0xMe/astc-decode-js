@@ -54,7 +54,6 @@ Decoding ASTC on the web typically means:
                 // use Default Icon
             } 
         } catch (error) {
-            status.textContent = 'Error: ' + error.message;
             console.error('Decoding error:', error);
         }
     }
