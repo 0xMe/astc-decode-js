@@ -20,7 +20,50 @@ Decoding ASTC on the web typically means:
 3. **Browser Support**
    - WebGL does not natively support ASTC textures everywhere; you must decode to RGBA for wide compatibility.
    
+### Example
 
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ASTC Decoder Example</title>
+      <script src="https://cdn.jsdelivr.net/gh/0xMe/astc-decode-js@main/astc-decode.js"></script>
+</head>
+<body>
+    <canvas id="outputCanvas"></canvas>
+    <script>
+    async function DisplayASTC() {
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d');
+        try {
+            // Wait for auto-initialization or manually initialize
+            if (!wasm) {
+                await initASTCDecoder();
+            }
+    
+            const response = await fetch('https://dl-tata.freefireind.in/live/ABHotUpdates/IconCDN/android/906000076_rgb.astc');
+            const astcData = new Uint8Array(await response.arrayBuffer());
+            const decodedData = decodeASTCTexture(astcData);
+            
+            const header = parseASTCHeader(astcData);
+            canvas.width = header.width;
+            canvas.height = header.height;
+            const success = drawToCanvas(ctx, decodedData, header.width, header.height);
+            if (!success) {
+                // use Default Icon
+            } 
+        } catch (error) {
+            status.textContent = 'Error: ' + error.message;
+            console.error('Decoding error:', error);
+        }
+    }
+    // Start the process when page loads
+    window.addEventListener('load', DisplayASTC);
+    </script>
+</body>
+</html>
+```
 
 ## Resources
 - [ASTC-Encoder on GitHub](https://github.com/ARM-software/astc-encoder)
