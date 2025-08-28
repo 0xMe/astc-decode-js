@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTC Texture Decoder - Professional Documentation</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Tailwind config for dark mode
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#2c3e50',
+              secondary: '#3498db',
+              accent: '#e74c3c',
+              success: '#27ae60',
+              warning: '#f39c12',
+              error: '#e74c3c',
+              darkbg: '#181a20',
+              lightbg: '#f8fafc',
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="dark bg-darkbg text-gray-200 min-h-screen transition-colors duration-300">
+    <div class="max-w-5xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="bg-primary text-white rounded-xl shadow-lg p-8 mb-8 text-center">
+            <h1 class="text-4xl font-bold mb-2">ASTC Texture Decoder</h1>
+            <p class="text-lg opacity-90">Professional Adaptive Scalable Texture Compression Decoder</p>
+            <div class="text-secondary mt-2 text-sm">By 0xMe</div>
+        </header>
+
+        <!-- Main content -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- File Upload Section -->
+            <div class="bg-darkbg rounded-xl shadow p-6">
+                <h2 class="text-2xl font-bold mb-4 border-b border-secondary pb-2 text-secondary">Load from File</h2>
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">Select ASTC File:</label>
+                    <div class="relative flex items-center">
+                        <input type="file" id="fileInput" accept=".astc" class="absolute w-full h-full opacity-0 z-10 cursor-pointer" />
+                        <div class="w-full border-2 border-dashed border-gray-600 rounded px-4 py-3 text-center bg-darkbg transition hover:border-secondary hover:bg-secondary/10" id="fileInputLabel">
+                            📁 Choose ASTC file or drag & drop here
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full h-1 bg-gray-700 rounded mt-2 mb-2 overflow-hidden">
+                    <div class="h-full bg-secondary transition-all" id="fileProgress" style="width:0%"></div>
+                </div>
+                <button class="btn bg-secondary text-white px-6 py-2 rounded hover:bg-blue-700 font-semibold transition w-full" onclick="loadFromFile()">Decode File</button>
+            </div>
+
+            <!-- URL Load Section -->
+            <div class="bg-darkbg rounded-xl shadow p-6">
+                <h2 class="text-2xl font-bold mb-4 border-b border-secondary pb-2 text-secondary">Load from URL</h2>
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">ASTC File URL:</label>
+                    <input type="url" id="urlInput" class="w-full px-4 py-3 rounded border border-gray-700 bg-darkbg text-gray-200 focus:border-secondary focus:outline-none transition" 
+                        placeholder="https://example.com/texture.astc"
+                        value="https://dl-tata.freefireind.in/live/ABHotUpdates/IconCDN/android/906000076_rgb.astc" />
+                </div>
+                <div class="w-full h-1 bg-gray-700 rounded mt-2 mb-2 overflow-hidden">
+                    <div class="h-full bg-secondary transition-all" id="urlProgress" style="width:0%"></div>
+                </div>
+                <button class="btn bg-secondary text-white px-6 py-2 rounded hover:bg-blue-700 font-semibold transition w-full" onclick="loadFromURL()">Load from URL</button>
+            </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="bg-darkbg rounded-xl shadow p-6 mb-8 col-span-2">
+            <h2 class="text-2xl font-bold mb-4 border-b border-secondary pb-2 text-secondary">Decoded Output</h2>
+            <div id="status" class="text-center py-3 rounded font-semibold mb-4 bg-gray-800 text-gray-200">Ready to decode ASTC textures</div>
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="flex-1 bg-gray-900 p-4 rounded-xl mb-4 md:mb-0 flex flex-col items-center">
+                    <canvas id="outputCanvas" width="256" height="256" class="max-w-full border-2 border-secondary rounded shadow"></canvas>
+                </div>
+                <div class="flex-1">
+                    <div class="bg-gray-800 rounded-xl p-4">
+                        <h3 class="text-lg font-bold text-secondary mb-3">File Information</h3>
+                        <div class="space-y-2">
+                            <div class="flex justify-between py-1 border-b border-gray-700 last:border-b-0">
+                                <span>Status:</span>
+                                <span id="infoStatus">No file loaded</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-gray-700 last:border-b-0">
+                                <span>Dimensions:</span>
+                                <span id="infoDimensions">-</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-gray-700 last:border-b-0">
+                                <span>Block Size:</span>
+                                <span id="infoBlockSize">-</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-gray-700 last:border-b-0">
+                                <span>File Size:</span>
+                                <span id="infoFileSize">-</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-gray-700 last:border-b-0">
+                                <span>Decoded Size:</span>
+                                <span id="infoDecodedSize">-</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span>Compression Ratio:</span>
+                                <span id="infoRatio">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 mt-4">
+                        <button class="btn bg-success text-white px-4 py-2 rounded font-semibold transition w-full disabled:opacity-50" onclick="downloadImage()" disabled id="downloadBtn">
+                            💾 Download Image
+                        </button>
+                        <button class="btn bg-warning text-white px-4 py-2 rounded font-semibold transition w-full" onclick="clearCanvas()">
+                            🗑️ Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentation Section -->
+        <div class="space-y-6">
+            <div class="bg-darkbg rounded-xl shadow p-6">
+                <h3 class="text-xl font-bold text-secondary mb-3">About ASTC Format</h3>
+                <p class="mb-3">Adaptive Scalable Texture Compression (ASTC) is an advanced lossy texture compression technology developed by ARM. It provides excellent compression ratios and image quality across various block sizes.</p>
+                <pre class="bg-gray-900 text-gray-200 rounded p-4 text-sm overflow-x-auto mb-2">
+// ASTC Header Structure (16 bytes)
+// Bytes 0-3: Magic Number (0x13, 0xAB, 0xA1, 0x5C)
+// Byte 4: Block Width
+// Byte 5: Block Height
+// Byte 6: Block Depth
+// Bytes 7-9: Image Width (24-bit LE)
+// Bytes 10-12: Image Height (24-bit LE)
+// Bytes 13-15: Image Depth (24-bit LE)
+                </pre>
+            </div>
+
+            <div class="bg-darkbg rounded-xl shadow p-6">
+                <h3 class="text-xl font-bold text-secondary mb-3">API Usage</h3>
+                <p class="mb-3">The decoder provides several ways to decode ASTC textures:</p>
+                <pre class="bg-gray-900 text-gray-200 rounded p-4 text-sm overflow-x-auto mb-2">
+// Basic decoding
+const decodedData = decodeASTCTexture(astcData);
+
+// Class-based approach
+const decoder = new ASTCDecoder();
+await decoder.init();
+const decodedData = decoder.decode(astcData);
+
+// Parse header only
+const header = parseASTCHeader(astcData);
+                </pre>
+            </div>
+
+            <div class="bg-darkbg rounded-xl shadow p-6">
+                <h3 class="text-xl font-bold text-secondary mb-3">Supported Block Sizes</h3>
+                <p class="mb-2">ASTC supports various block sizes for different compression ratios:</p>
+                <ul class="list-disc pl-6">
+                    <li>4x4, 5x4, 5x5, 6x5, 6x6</li>
+                    <li>8x5, 8x6, 8x8, 10x5, 10x6</li>
+                    <li>10x8, 10x10, 12x10, 12x12</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer class="text-center py-8 mt-8 text-gray-400">
+            <p>Powered by WebAssembly. Requires modern browser with WebAssembly support.</p>
+        </footer>
+    </div>
+
+    <script src="astc-decode.js"></script>
+    <script>
+        // Global variables
+        let currentDecodedData = null;
+        let currentHeader = null;
+
+        // Initialize on page load
+        window.addEventListener('load', async () => {
+            updateStatus('Initializing ASTC decoder...', 'loading');
+            
+            try {
+                await initASTCDecoder();
+                updateStatus('ASTC decoder ready!', 'success');
+                updateInfo('status', 'Decoder initialized');
+            } catch (error) {
+                updateStatus('Initialization failed: ' + error.message, 'error');
+                updateInfo('status', 'Initialization failed');
+            }
+
+            // Setup drag and drop
+            setupDragAndDrop();
+        });
+
+        // Setup drag and drop functionality
+        function setupDragAndDrop() {
+            const dropArea = document.getElementById('fileInputLabel');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.classList.add('border-secondary', 'bg-secondary/10');
+            }
+            
+            function unhighlight() {
+                dropArea.classList.remove('border-secondary', 'bg-secondary/10');
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    document.getElementById('fileInput').files = files;
+                    updateFileInfo(files[0]);
+                }
+            }
+        }
+
+        // Update status message
+        function updateStatus(message, type = '') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = "text-center py-3 rounded font-semibold mb-4";
+            if (type === 'loading') status.classList.add('bg-warning', 'text-white');
+            else if (type === 'success') status.classList.add('bg-success', 'text-white');
+            else if (type === 'error') status.classList.add('bg-error', 'text-white');
+            else status.classList.add('bg-gray-800', 'text-gray-200');
+        }
+
+        // Update info panel
+        function updateInfo(elementId, value) {
+            document.getElementById(elementId).textContent = value;
+        }
+
+        // Update file information
+        function updateFileInfo(file) {
+            if (file) {
+                document.getElementById('fileInputLabel').textContent = `📄 ${file.name} (${formatFileSize(file.size)})`;
+            }
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Load and decode from file
+        async function loadFromFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                updateStatus('Please select an ASTC file first', 'error');
+                return;
+            }
+            
+            await decodeASTCFile(file);
+        }
+
+        // Load and decode from URL
+        async function loadFromURL() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                updateStatus('Please enter a valid URL', 'error');
+                return;
+            }
+            
+            try {
+                updateStatus('Downloading from URL...', 'loading');
+                setProgress('urlProgress', 0);
+                
+                const response = await fetch(url);
+                const contentLength = response.headers.get('content-length');
+                let receivedLength = 0;
+                
+                if (contentLength) {
+                    const reader = response.body.getReader();
+                    const chunks = [];
+                    
+                    while(true) {
+                        const {done, value} = await reader.read();
+                        
+                        if (done) break;
+                        
+                        chunks.push(value);
+                        receivedLength += value.length;
+                        setProgress('urlProgress', (receivedLength / contentLength) * 100);
+                    }
+                    
+                    const astcData = new Uint8Array(receivedLength);
+                    let position = 0;
+                    for(let chunk of chunks) {
+                        astcData.set(chunk, position);
+                        position += chunk.length;
+                    }
+                    
+                    await processASTCData(astcData, `URL: ${new URL(url).pathname.split('/').pop()}`);
+                } else {
+                    // Fallback for servers that don't provide content-length
+                    const arrayBuffer = await response.arrayBuffer();
+                    setProgress('urlProgress', 100);
+                    await processASTCData(new Uint8Array(arrayBuffer), `URL: ${new URL(url).pathname.split('/').pop()}`);
+                }
+                
+            } catch (error) {
+                updateStatus('Download failed: ' + error.message, 'error');
+                setProgress('urlProgress', 0);
+            }
+        }
+
+        // Decode ASTC file
+        async function decodeASTCFile(file) {
+            try {
+                updateStatus('Reading file...', 'loading');
+                setProgress('fileProgress', 0);
+                
+                const reader = new FileReader();
+                
+                reader.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percent = (event.loaded / event.total) * 100;
+                        setProgress('fileProgress', percent);
+                    }
+                };
+                
+                reader.onload = async (event) => {
+                    try {
+                        setProgress('fileProgress', 100);
+                        const arrayBuffer = event.target.result;
+                        await processASTCData(new Uint8Array(arrayBuffer), file.name);
+                    } catch (error) {
+                        updateStatus('Decoding failed: ' + error.message, 'error');
+                        setProgress('fileProgress', 0);
+                    }
+                };
+                
+                reader.onerror = () => {
+                    updateStatus('File reading failed', 'error');
+                    setProgress('fileProgress', 0);
+                };
+                
+                reader.readAsArrayBuffer(file);
+                
+            } catch (error) {
+                updateStatus('File processing error: ' + error.message, 'error');
+            }
+        }
+
+        // Process ASTC data
+        async function processASTCData(astcData, filename) {
+            try {
+                updateStatus('Decoding ASTC texture...', 'loading');
+                
+                if (!wasm) {
+                    await initASTCDecoder();
+                }
+                
+                // Parse header first to get dimensions
+                currentHeader = parseASTCHeader(astcData);
+                
+                // Decode the texture
+                currentDecodedData = decodeASTCTexture(astcData);
+                
+                // Display the image
+                const canvas = document.getElementById('outputCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = currentHeader.width;
+                canvas.height = currentHeader.height;
+                
+                const success = drawToCanvas(ctx, currentDecodedData, currentHeader.width, currentHeader.height);
+                
+                if (success) {
+                    updateStatus(`Successfully decoded ${filename}`, 'success');
+                    
+                    // Update info panel
+                    updateInfo('infoStatus', 'Decoded successfully');
+                    updateInfo('infoDimensions', `${currentHeader.width} × ${currentHeader.height}`);
+                    updateInfo('infoBlockSize', currentHeader.blockSize);
+                    updateInfo('infoFileSize', formatFileSize(astcData.length));
+                    updateInfo('infoDecodedSize', formatFileSize(currentDecodedData.length));
+                    
+                    const compressionRatio = (astcData.length - 16) / (currentHeader.width * currentHeader.height * 4);
+                    updateInfo('infoRatio', compressionRatio.toFixed(2) + ':1');
+                    
+                    // Enable download button
+                    document.getElementById('downloadBtn').disabled = false;
+                    
+                } else {
+                    updateStatus('Rendering failed', 'error');
+                    updateInfo('infoStatus', 'Rendering failed');
+                }
+                
+            } catch (error) {
+                updateStatus('Decoding error: ' + error.message, 'error');
+                updateInfo('infoStatus', 'Error: ' + error.message);
+                console.error('Decoding error:', error);
+            }
+        }
+
+        // Set progress bar
+        function setProgress(progressId, percent) {
+            document.getElementById(progressId).style.width = percent + '%';
+        }
+
+        // Download decoded image
+        function downloadImage() {
+            if (!currentDecodedData || !currentHeader) return;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = currentHeader.width;
+            canvas.height = currentHeader.height;
+            const ctx = canvas.getContext('2d');
+            
+            drawToCanvas(ctx, currentDecodedData, currentHeader.width, currentHeader.height);
+            
+            const link = document.createElement('a');
+            link.download = 'decoded_texture.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Clear canvas
+        function clearCanvas() {
+            const canvas = document.getElementById('outputCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            currentDecodedData = null;
+            currentHeader = null;
+            
+            updateStatus('Canvas cleared. Ready for new decoding.', '');
+            updateInfo('infoStatus', 'No file loaded');
+            updateInfo('infoDimensions', '-');
+            updateInfo('infoBlockSize', '-');
+            updateInfo('infoFileSize', '-');
+            updateInfo('infoDecodedSize', '-');
+            updateInfo('infoRatio', '-');
+            
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('fileInputLabel').textContent = '📁 Choose ASTC file or drag & drop here';
+            document.getElementById('fileInput').value = '';
+            
+            setProgress('fileProgress', 0);
+            setProgress('urlProgress', 0);
+        }
+    </script>
+</body>
+</html>
